@@ -21,6 +21,20 @@ A simple `pass` or `fail` doesn't tell the whole story. A score of **95%** indic
 **How does it work?**
 After a chaos scenario completes, Krkn evaluates a list of pre-defined SLOs (which are Prometheus alert expressions) over the chaos time window. It counts how many SLOs passed and failed, applies a weighted scoring model, and embeds a detailed report in the final telemetry output.
 
+### Evaluation Window
+
+Resiliency SLOs are evaluated over the scenario's **during window**. The window starts when the scenario begins and ends when the scenario telemetry is complete. Every expression in the configured resiliency alert file is queried against Prometheus over that range.
+
+This is separate from Prometheus health-check alerts configured with `performance_monitoring.run_during`:
+
+* `pre` and `post` run instant checks before and after the chaos scenario.
+* `during` runs a health-check query over the chaos window.
+* These health-check phases do not change the resiliency-score window.
+
+For example, with health checks configured for `pre` and `post`, those checks can pass at both sample points while a resiliency SLO still fails because it detected a transient violation during the scenario. The report displays these as separate health-check alerts and resiliency SLO results.
+
+For multiple scenarios, Krkn evaluates each scenario over its own start and end timestamps. The per-scenario scores are then combined using the configured scenario weights.
+
 ### The Scoring Algorithm
 
 The final score is calculated using a weighted pass/fail model. By default, weights are based on SLO severity, but you can also assign custom weights to individual SLOs for more granular control.
@@ -258,9 +272,9 @@ A single `Resiliency` class in `krkn/resiliency/resiliency.py` manages the entir
    - Uses the `evaluate_slos()` function from `krkn/prometheus/collector.py`
 
 3. **Result Mapping**
-   - A non-empty query result marks the SLO as **failed**
-   - An empty result marks it as **passed**
-   - SLOs that return no data from Prometheus are **excluded** from scoring
+   - A query result containing a violating value marks the SLO as **failed**
+   - A query result with no violating values marks it as **passed**
+   - SLOs that return no data from Prometheus are treated as passing and remain part of the score calculation
 
 4. **Scoring**
    - For each SLO, determines the weight: uses custom weight if specified, otherwise uses severity-based weight (critical = 3, warning = 1)
@@ -285,6 +299,87 @@ Final Score = Σ(scenario_score × scenario_weight) / Σ(scenario_weight)
 ```
 
 This allows you to prioritize certain scenarios over others when calculating the overall resiliency score for a chaos run.
+
+#### Assigning Scenario Weights
+
+You can assign weights to scenarios in your Krkn configuration to reflect their relative importance. Scenarios with higher weights contribute more heavily to the final resiliency score.
+
+**Example Configuration with Scenario Weights:**
+
+```yaml
+kraken:
+  chaos_scenarios:
+    # Critical infrastructure scenarios - highest weight (3x)
+    - pod_disruption_scenarios:
+        weight: 3
+        files:
+          - scenarios/kind/pod_etcd.yml
+
+    # Important pod api server - high weight (2x)
+    - pod_disruption_scenarios:
+        weight: 2
+        files:
+          - scenarios/kind/pod_apiserver.yml
+
+    # Pod DNS failures - medium weight (1.5x)
+    - pod_disruption_scenarios:
+        weight: 1.5
+        files:
+          - scenarios/kind/pod_dns.yml
+
+    # Less critical scenario - default weight (1x)
+    - node_scenarios:
+        files:
+          - scenarios/kind/node_scenario.yml
+```
+
+**How Weights Affect Scoring:**
+
+Consider a chaos run with three scenarios:
+- `pod_etcd`: Score 90, Weight 3x
+- `pod_apiserver`: Score 85, Weight 2x
+- `pod_dns`: Score 80, Weight 1x
+
+**Calculation:**
+```
+Final Score = (90×3 + 85×2 + 80×1) / (3 + 2 + 1)
+            = (270 + 170 + 80) / 6
+            = 520 / 6
+            = 86.67 (rounded to 87)
+```
+
+The etcd scenario, with weight 3x, has the most influence on the final score. The DNS scenario, with weight 1x, has the least influence.
+
+**Best Practices for Scenario Weights:**
+
+1. **Prioritize Business-Critical Components:** Assign higher weights to scenarios that test critical infrastructure components your users depend on (e.g., etcd, API server, payment processing)
+2. **Use Consistent Scales:** Maintain a consistent weight scale (e.g., 1-5) to make weights comparable across scenarios
+3. **Document Your Decisions:** Add comments explaining why certain scenarios have higher weights
+4. **Test and Validate:** Run multiple chaos rounds and review the resulting scores to ensure your weighting model aligns with your actual priorities
+5. **Review Over Time:** Periodically revisit your scenario weights as your infrastructure and business priorities evolve
+
+#### Viewing Scenario Weights in Reports
+
+When you run a chaos test with weighted scenarios, the weights are displayed in all generated reports:
+
+**Text Report Example:**
+```
+RESILIENCY SCORE
+  pod_disruption_etcd          : 90 / 100 (weight: 3x)
+  pod_disruption_apiserver     : 85 / 100 (weight: 2x)
+  pod_dns                      : 80 / 100 (weight: 1x)
+  Calculation: (90×3 + 85×2 + 80×1) ÷ 6 = 87
+  Overall Score                : 87 / 100  ⚠️
+```
+
+**PDF and HTML Reports:**
+
+The PDF and HTML reports include a dedicated "Resiliency Score" section that displays:
+- A table with each scenario, its weight, and its individual score
+- A calculation explanation showing how the weighted average was computed
+- The final overall resiliency score
+
+This makes it clear to stakeholders how each scenario's score contributes to the overall resiliency assessment.
 
 ### Historical Resiliency Scoring
 

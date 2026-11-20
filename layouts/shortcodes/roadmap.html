@@ -1,4 +1,6 @@
-{{- $releases := .Site.Data.roadmap.releases -}}
+{{- $context := partial "operator-docs/context.html" .Page -}}
+{{- $roadmap := .Site.Data.roadmap -}}
+{{- $releases := $roadmap.releases -}}
 <div class="krkn-roadmap">
   {{- range $i, $release := $releases -}}
   <div class="krkn-roadmap__release krkn-roadmap__release--{{ $release.status }}">

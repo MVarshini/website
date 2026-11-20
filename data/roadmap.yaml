@@ -9,22 +9,33 @@ releases:
 
   - version: "v1.0.0"
     title: "OCM Cluster communication improvements"
-    date: "2026-08-09"
-    status: in-progress
+    date: "2026-08-17"
+    status: released
     tasks:
       - "Scenario Save/Replay"
       - "[Cluster Proxy](https://open-cluster-management.io/docs/getting-started/integration/cluster-proxy/) Support"
       - "Per node resiliency score"
       - "Save/Edit/Delete Workflow Templates"
 
-  - version: "v1.0.1"
-    title: "Scenario Rollback"
-    date: "2026-09-09"
-    status: planned
+  - version: "v1.1.0"
+    title: "Cluster Management, Reliability & Observability Updates"
+    date: "2026-10-20"
+    status: released
     tasks:
-      - "Scenario Rollback"
       - "Cluster liveness check"
       - "Operator Hub distribution channel"
       - "Chaos Studio scenario import"
       - "Elasticsearch views (summary charts, metric views, and alerts)"
+      - "Signed krkn-hub images"
+      - "Operator Backup/Restore"
+      - "Cloud credentials support for cloud scenarios"
+  - version: "v1.2.0"
+    title: "Scenario Rollback"
+    date: "2026-12-22"
+    status: in-progress
+    tasks:
+      - "Scenario Rollback"
+      - "Krkn AI"
+      - "Health Check Plugins and Event Triggers as Nodes in ChaosStudio"
+      - "Auto populate Pod/Node details for selection in scenario"
 

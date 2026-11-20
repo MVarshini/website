@@ -5,6 +5,10 @@ description: >
 
 ### Presentations and Blogs
 
+- Building Kubernetes resilience with Krkn: A 4-phase chaos engineering blueprint: https://developers.redhat.com/articles/2026/10/22/kubernetes-resilience-with-krkn-4-phase-chaos-engineering-blueprint#phase_2__execute_and_harden
+- Chaos engineering in practice: Lessons from enterprise customers: https://www.redhat.com/en/blog/chaos-engineering-practice-lessons-enterprise-customers
+- Beyond pass or fail: The new era of chaos engineering: https://developers.redhat.com/articles/2026/09/30/beyond-pass-or-fail-the-new-era-of-chaos-engineering#bridging_the_infra_gap__kubevirt_virtual_machine_checks
+
 - Blog post on introduction to Kraken: https://www.openshift.com/blog/introduction-to-kraken-a-chaos-tool-for-openshift/kubernetes
 - Discussion and demo on how Kraken can be leveraged to ensure OpenShift is reliable, performant and scalable: https://www.youtube.com/watch?v=s1PvupI5sD0&ab_channel=OpenShift
 - Blog post emphasizing the importance of making Chaos part of Performance and Scale runs to mimic the production environments: https://www.openshift.com/blog/making-chaos-part-of-kubernetes/openshift-performance-and-scalability-tests
@@ -18,6 +22,7 @@ description: >
 - Blog post on LFX Mentorship Term 2 2025 experience working with the krkn team on the rollback feature: https://blog.zhu424.dev/open-source-contribution/lfx-mentorship-2025-cncf-krkn
 - Blog post on creating custom chaos scenarios in krkn: https://medium.com/@abhinavs1920/krkn-custom-chaos-engineering-plugins-70d73c7e2118
 - Blog post on Resiliency Scoring Feature: https://medium.com/@abhinavs1920/we-replaced-pass-fail-chaos-testing-with-a-score-heres-the-math-e0eeafb5d938
+- Blog post on Krkn-Operator Developer Preview in Red Hat Advanced Cluster Management, use cases and capabilities: https://developers.redhat.com/articles/2026/08/17/krkn-operator-developer-preview-red-hat-acm
 
 ### Chaos Testing Guide
 Guide covering the best practices, recommendations that an OpenShift platform as well as the applications running on top it should follow to be resilient, performant and reliable in addition to instructions on how to leverage tooling to achieve it: https://redhat-chaos.github.io/krkn/.

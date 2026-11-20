@@ -6,10 +6,58 @@
  */
 
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const { marked } = require('marked');
 const cheerio = require('cheerio');
 const Fuse = require('fuse.js');
+const yaml = require('yaml');
+const { readRegistry, selectDefaultRelease } = require('./lib/operator-docs');
+
+const DATA_PATH = path.join(__dirname, '../data');
+const PARAM_TABLE = /\{\{<\s*param-table\s+([^>]*?)>\}\}/g;
+const CRD_REF = /\{\{<\s*crd-ref\s+([^>]*?)>\}\}/g;
+
+function shortcodeAttrs(raw) {
+    const out = {};
+    for (const m of raw.matchAll(/(\w+)="([^"]*)"/g)) out[m[1]] = m[2];
+    return out;
+}
+
+function readData(...parts) {
+    try {
+        return yaml.parse(fsSync.readFileSync(path.join(DATA_PATH, ...parts), 'utf-8'));
+    } catch {
+        // Hugo already fails the build on a shortcode it cannot resolve.
+        return null;
+    }
+}
+
+// marked() leaves Hugo shortcodes alone, so a page using param-table would
+// index the literal "{{< param-table ... >}}" instead of its parameters.
+function expandShortcodes(markdown) {
+    return markdown
+        .replace(PARAM_TABLE, (_match, raw) => {
+            const a = shortcodeAttrs(raw);
+            const data = readData('params', a.scenario || '', `${a.source || ''}.yaml`);
+            let rows = (data && data.params) || [];
+            if (a.group) rows = rows.filter(r => r.group === a.group);
+            return rows.map(r => [
+                // flag when present, the same identifier the shortcode renders
+                `${a.prefix || ''}${r.flag || r.name}`,
+                r.description, r.type,
+                r.secret === undefined ? '' : 'secret',
+                r.default === undefined ? '' : String(r.default),
+                ...(r.possible_values || []),
+            ].filter(Boolean).join(' ')).join(' ');
+        })
+        .replace(CRD_REF, (_match, raw) => {
+            const a = shortcodeAttrs(raw);
+            const index = readData('krkn_operator_crds.yaml');
+            const entry = index && index[a.crd];
+            return entry ? `${entry.kind || a.crd} ${entry.short || ''}` : (a.crd || '');
+        });
+}
 
 // Build-time version that reads markdown files directly
 class BuildTimeIndexer {
@@ -27,17 +75,36 @@ class BuildTimeIndexer {
     }
 
     async buildIndex() {
-        await this.processDirectory(this.contentPath);
+        const repoRoot = path.resolve(this.contentPath, '../..');
+        const registry = readRegistry(repoRoot);
+        const defaultRelease = selectDefaultRelease(registry);
+        if (!defaultRelease) {
+            await this.processDirectory(this.contentPath);
+            return;
+        }
+
+        await this.processDirectory(this.contentPath, {
+            excludeOperatorDocs: true,
+        });
+        await this.processDirectory(path.join(
+            this.contentPath,
+            'docs/krkn-operator/versions',
+            defaultRelease.tag
+        ));
     }
 
-    async processDirectory(dirPath) {
+    async processDirectory(dirPath, options = {}) {
+        if (!fsSync.existsSync(dirPath)) return;
+        const operatorRoot = path.join(this.contentPath, 'docs/krkn-operator');
+        if (options.excludeOperatorDocs && path.resolve(dirPath) === path.resolve(operatorRoot)) return;
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
         
         for (const entry of entries) {
             const fullPath = path.join(dirPath, entry.name);
             
             if (entry.isDirectory()) {
-                await this.processDirectory(fullPath);
+                if (options.excludeOperatorDocs && path.resolve(fullPath) === path.resolve(operatorRoot)) continue;
+                await this.processDirectory(fullPath, options);
             } else if (entry.isFile() && entry.name.endsWith('.md')) {
                 await this.processMarkdownFile(fullPath);
             }
@@ -47,8 +114,8 @@ class BuildTimeIndexer {
     async processMarkdownFile(filePath) {
         try {
             const content = await fs.readFile(filePath, 'utf-8');
-            const parsed = this.parseMarkdown(content);
-            
+            const parsed = this.parseMarkdown(expandShortcodes(content));
+            if (parsed?.excludeSearch) return;
             if (parsed && parsed.title) {
                 const url = this.generateUrl(filePath);
                 const topic = this.extractTopic(filePath);
@@ -129,7 +196,8 @@ class BuildTimeIndexer {
                 title,
                 description,
                 content: textContent,
-                tags
+                tags,
+                excludeSearch: frontmatter.exclude_search === 'true' || frontmatter.exclude_search === true
             };
         } catch (error) {
             return null;
@@ -153,11 +221,12 @@ class BuildTimeIndexer {
     }
 }
 
-async function buildSearchIndex() {
+async function buildSearchIndex(options = {}) {
     console.log('Building search index...');
     
     try {
-        const contentPath = path.join(__dirname, '../content/en');
+        const repoRoot = path.resolve(options.repoRoot || path.join(__dirname, '..'));
+        const contentPath = options.contentPath || path.join(repoRoot, 'content/en');
         const indexer = new BuildTimeIndexer(contentPath);
         await indexer.buildIndex();
         
@@ -170,15 +239,20 @@ async function buildSearchIndex() {
             buildTime: new Date().toISOString()
         };
         
-        const outputPath = path.join(__dirname, '../static/search-index.json');
+        const outputPath = options.outputPath || path.join(repoRoot, 'static/search-index.json');
         await fs.writeFile(outputPath, JSON.stringify(indexData, null, 2));
         
         console.log(`✅ Indexed ${indexData.documents.length} documents`);
         
     } catch (error) {
         console.error('Failed to build search index:', error);
-        process.exit(1);
+        if (require.main === module) process.exitCode = 1;
+        throw error;
     }
 }
 
-buildSearchIndex();
+if (require.main === module) {
+    buildSearchIndex().catch(() => {});
+}
+
+module.exports = { BuildTimeIndexer, buildSearchIndex };

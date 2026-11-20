@@ -153,8 +153,6 @@
 }
 
 // Sidebar badges (e.g., beta, new, etc.)
-// Only show badge on main krkn-operator page, not sub-chapters
-.td-sidebar-nav a[href$="/krkn-operator/"],
 .td-sidebar-nav a[href$="/resiliency-score/"] {
   position: relative;
   display: inline-flex;
@@ -1955,7 +1953,7 @@ table tbody tr:hover {
   &--admin { background: var(--krkn-primary); color: var(--krkn-text-on-color); }
   &--view { background: var(--krkn-secondary); color: var(--krkn-text-on-color); }
   &--run { background: var(--krkn-success); color: var(--krkn-text-on-color); }
-  &--delete { background: var(--krkn-danger); color: var(--krkn-text-on-color); }
+  &--cancel { background: var(--krkn-danger); color: var(--krkn-text-on-color); }
 
   a & {
     text-decoration: none;
@@ -2586,5 +2584,24 @@ table tbody tr:hover {
   .krkn-toc-collapsed .krkn-toc-toggle svg,
   body.krkn-toc-collapsed .krkn-toc-toggle svg {
     transform: rotate(180deg);
+  }
+}
+
+.krkn-param-table {
+  table-layout: fixed;
+  width: 100%;
+
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 18%;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 42%;
+  }
+
+  td {
+    word-break: break-word;
   }
 }

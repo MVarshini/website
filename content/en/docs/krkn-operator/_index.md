@@ -5,6 +5,7 @@ weight: 8
 description: >
   A Kubernetes-native platform for orchestrating Chaos Engineering experiments through a web interface.
 ---
+<img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=b6153e03-2a9a-4d95-a2ce-89c05ede15f2" alt="" width="1" height="1" style="position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;" />
 
 Krkn Operator is a Kubernetes-native platform to deploy, configure and orchestrate Chaos Engineering experiments through a web console. Instead of manually executing scenarios, the Operator provides a complete platform to manage users, clusters, permissions and experiment execution from a single place.
 
@@ -36,19 +37,21 @@ Full access to the platform. Administrators configure the infrastructure that us
 - Register and remove target **clusters**
 - Create **groups** with cluster access and permissions
 - Create **users** and assign them to groups
-- Configure **private registries** and their visibility
+- Configure **private registries**, [mirror signed images](administration/mirroring-signed-images/), and control registry visibility
+- Configure **cloud credentials** and their visibility
 - Configure **target providers** (e.g. ACM integration)
 - All operational features available to users
 
 ### User
 
-Operational access scoped by group membership. Every user must belong to a group — the group determines which clusters, registries and features are accessible.
+Operational access scoped by group membership. Every user must belong to a group — the group determines which clusters, registries, credentials and features are accessible.
 
-- View and manage **jobs** (based on View/Delete permissions)
+- View and manage **jobs** (based on View/Cancel permissions)
 - Use the **cluster terminal** (requires Run permission)
 - **Run scenarios** on assigned clusters (requires Run permission)
 - Design workflows in **Chaos Studio** (requires Run permission)
 - Upload and manage **files** (scoped by group visibility)
+- Select **cloud credentials** available to their group when running cloud scenarios
 
 {{% notice info %}}
 Users only see jobs from their own group. A cluster-wide indicator shows the names of running scenarios across all groups, but no details.
@@ -70,7 +73,7 @@ Users only see jobs from their own group. A cluster-wide indicator shows the nam
   Clusters     Clusters
   Permissions  Permissions
   (View,Run,   (View)
-   Delete)
+   Cancel)
     │             │
   Users        Users
 ```
@@ -81,7 +84,7 @@ Permissions are assigned at the group level and determine what users can do on c
 
 <span class="krkn-badge krkn-badge--view">View</span>
 
-Allows users to see jobs and their execution results. Users with this permission can inspect single run outcomes, console logs, graph run nodes, and Resiliency Scores — but cannot execute or delete anything.
+Allows users to see jobs and their execution results. Users with this permission can inspect single run outcomes, console logs, graph run nodes, and Resiliency Scores — but cannot execute, cancel or remove anything.
 
 **Applies to:** [Jobs](/docs/krkn-operator/usage/jobs/)
 
@@ -93,11 +96,11 @@ Allows users to execute chaos experiments on the clusters assigned to their grou
 
 **Applies to:** [Run Scenarios](/docs/krkn-operator/usage/run-scenarios/) · [Chaos Studio](/docs/krkn-operator/usage/chaos-studio/) · [Cluster Terminal](/docs/krkn-operator/usage/cluster-terminal/)
 
-### Delete {#permission-delete}
+### Cancel {#permission-cancel}
 
-<span class="krkn-badge krkn-badge--delete">Delete</span>
+<span class="krkn-badge krkn-badge--cancel">Cancel</span>
 
-Allows users to remove completed jobs and their execution history. Without this permission, jobs remain visible but cannot be deleted.
+Allows users to cancel running scenarios and to remove scenario runs and their execution history. Without this permission, jobs remain visible but cannot be cancelled or removed.
 
 **Applies to:** [Jobs](/docs/krkn-operator/usage/jobs/)
 
@@ -109,10 +112,11 @@ Allows users to remove completed jobs and their execution history. Without this 
 |------------|-------------|
 | Cluster Management | Register and manage target Kubernetes clusters |
 | User & Group Management | Organize users through groups with granular permissions |
-| Private Registries | Configure private container registries with group-based visibility |
+| [Private Registries](administration/registry-management/) | Configure private registries and [mirror signed scenario and workload images](administration/mirroring-signed-images/) |
+| Cloud Credentials | Save cloud provider credentials and inject them into scenario pods via SecretKeyRef |
 | Chaos Studio | Design reusable visual workflows with serial and parallel execution |
 | Multi-cluster Execution | Run experiments on one or more clusters simultaneously |
-| Resiliency Score | Measure application resilience using PromQL-based metrics |
+| Resiliency Score | Measure application resilience using PromQL-based metrics and compare results in the [Resiliency Score Report](usage/job-categories-resiliency-score-report/) |
 | Jobs | Monitor experiment progress and inspect execution logs |
 | Cluster Terminal | Explore managed clusters using read-only kubectl and oc commands |
 | File Management | Store reusable configuration files and PromQL queries |
@@ -134,6 +138,6 @@ See the [Compatibility Matrix](compatibility/) for tested ACM/OCM versions and p
 ## Next Steps
 
 - [Installation](installation/) — Deploy Krkn Operator with Helm
-- [Administration](administration/) — Configure clusters, users, registries and providers
+- [Administration](administration/) — Configure clusters, users, registries, credentials and providers
 - [Usage](usage/) — Run scenarios, use Chaos Studio, manage jobs
 - [Compatibility Matrix](compatibility/) — Supported platforms and ACM/OCM versions

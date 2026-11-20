@@ -1,9 +1,8 @@
 ---
-title: Adding to Krkn Test Suite
-# date: 2017-01-05
-description:
-weight : 4
-categories: [Best Practices ]
+title: Adding Tests to Krkn
+description: Add focused unit tests and functional coverage to the Krkn test suites.
+weight: 70
+categories: [Developers Guide]
 tags: [docs]
 ---
 
@@ -21,7 +20,7 @@ Place your test file in the `tests/` directory with the naming pattern `test_<fe
 
 ```bash
 tests/
-├── test_kubevirt_vm_outage.py
+├── test_vmi_outage.py
 ├── test_ibmcloud_node_scenarios.py
 ├── test_ibmcloud_power_node_scenarios.py
 └── test_<your_feature>.py
